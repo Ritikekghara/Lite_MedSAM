@@ -1,0 +1,348 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+  <title>MedSAM Web App</title>
+  <style>
+    #canvas {
+      border: 1px solid black;
+      cursor: crosshair;
+    }
+  </style>
+</head>
+<body>
+  <h2>Upload Image and Draw Bounding Box</h2>
+  <input type="file" id="imageInput" accept="image/*"><br><br>
+  <canvas id="canvas"></canvas><br>
+  <button id="submitBtn">Predict Mask</button>
+  <h3>Predicted Mask:</h3>
+  <img id="maskResult" alt="Predicted mask" style="max-width: 512px;">
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let image = new Image();
+    let startX, startY, endX, endY;
+    let drawing = false;
+
+    document.getElementById('imageInput').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        image.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    image.onload = function () {
+      canvas.width = image.width;
+      canvas.height = image.height;
+      ctx.drawImage(image, 0, 0);
+    };
+
+    canvas.addEventListener('mousedown', function (e) {
+      startX = e.offsetX;
+      startY = e.offsetY;
+      drawing = true;
+    });
+
+    canvas.addEventListener('mouseup', function (e) {
+      if (!drawing) return;
+      endX = e.offsetX;
+      endY = e.offsetY;
+      drawing = false;
+      ctx.drawImage(image, 0, 0);  // Clear canvas
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+    });
+
+    document.getElementById('submitBtn').addEventListener('click', async function () {
+      const imageInput = document.getElementById('imageInput');
+      if (!imageInput.files[0] || startX == null || endX == null) {
+        alert("Please upload an image and draw a bounding box.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("image", imageInput.files[0]);
+      formData.append("box", JSON.stringify([startX, startY, endX, endY]));
+
+      try {
+        const response = await fetch("/predict", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error("Server error:", errText);
+          throw new Error("Prediction failed.");
+        }
+
+        const data = await response.json();
+        document.getElementById('maskResult').src = "data:image/png;base64," + data.mask;
+
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html> -->
+
+
+<!-- templates/index.html   mask overlay -->
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MedSAM Overlay</title>
+    <style>
+        canvas {
+            border: 2px solid black;
+        }
+        #output {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<h2>Upload Medical Image and Draw Bounding Box</h2>
+<input type="file" id="imageInput">
+<canvas id="canvas"></canvas>
+<br>
+<button onclick="submitBox()">Submit</button>
+<div id="output"></div>
+
+<script>
+let canvas = document.getElementById('canvas');
+let ctx = canvas.getContext('2d');
+let img = new Image();
+let startX, startY, endX, endY, dragging = false;
+let imageFile;
+
+imageInput.addEventListener('change', function (e) {
+    imageFile = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        img.onload = function () {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+        }
+        img.src = event.target.result;
+    }
+    reader.readAsDataURL(imageFile);
+});
+
+canvas.addEventListener('mousedown', e => {
+    startX = e.offsetX;
+    startY = e.offsetY;
+    dragging = true;
+});
+
+canvas.addEventListener('mouseup', e => {
+    if (!dragging) return;
+    endX = e.offsetX;
+    endY = e.offsetY;
+    dragging = false;
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+});
+
+function submitBox() {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    formData.append('box', `[${startX},${startY},${endX},${endY}]`);
+
+        fetch('/predict', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert("Prediction failed: " + data.error);
+        } else {
+            output.innerHTML = `<h3>Predicted Overlay:</h3><img src="data:image/png;base64,${data.overlay}" alt="Overlay"/>`;
+
+        }
+    })
+    .catch(err => {
+        alert("Request failed: " + err.message);
+    });
+
+}
+</script>
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MedSAM Overlay</title>
+  <style>
+    /* Animated gradient background */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(-45deg, #e0eafc, #cfdef3, #fdfbfb, #d9afd9);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+    }
+
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Header styling */
+    header {
+      width: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 20px 0;
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    h2 {
+      color: #2c3e50;
+      margin: 30px 0 10px;
+    }
+
+    input[type="file"] {
+      margin: 10px 0 20px;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background-color: white;
+    }
+
+    canvas {
+      border: 2px dashed #34495e;
+      background-color: #ffffff;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 28px;
+      font-size: 16px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2ecc71;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    #output {
+      margin: 30px 0;
+      text-align: center;
+    }
+
+    #output img {
+      max-width: 100%;
+      border: 3px solid #2ecc71;
+      border-radius: 10px;
+      margin-top: 10px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    🧠 Medical Analysis
+  </header>
+
+  <h2>Upload Medical Image and Draw Bounding Box</h2>
+  <input type="file" id="imageInput">
+  <canvas id="canvas"></canvas>
+  <br>
+  <button onclick="submitBox()">Submit</button>
+  <div id="output"></div>
+
+  <script>
+    let canvas = document.getElementById('canvas');
+    let ctx = canvas.getContext('2d');
+    let img = new Image();
+    let startX, startY, endX, endY, dragging = false;
+    let imageFile;
+
+    imageInput.addEventListener('change', function (e) {
+      imageFile = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        img.onload = function () {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+        }
+        img.src = event.target.result;
+      }
+      reader.readAsDataURL(imageFile);
+    });
+
+    canvas.addEventListener('mousedown', e => {
+      startX = e.offsetX;
+      startY = e.offsetY;
+      dragging = true;
+    });
+
+    canvas.addEventListener('mouseup', e => {
+      if (!dragging) return;
+      endX = e.offsetX;
+      endY = e.offsetY;
+      dragging = false;
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+    });
+
+    function submitBox() {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      formData.append('box', `[${startX},${startY},${endX},${endY}]`);
+
+      fetch('/predict', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert("Prediction failed: " + data.error);
+        } else {
+          output.innerHTML = `<h3>Predicted Overlay:</h3><img src="data:image/png;base64,${data.overlay}" alt="Overlay"/>`;
+        }
+      })
+      .catch(err => {
+        alert("Request failed: " + err.message);
+      });
+    }
+  </script>
+</body>
+</html>
