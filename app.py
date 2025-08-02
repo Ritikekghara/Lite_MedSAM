@@ -88,7 +88,7 @@ import torch
 import torch.nn.functional as F
 from litemedsam.medsam_lite import MedSAM_Lite
 from litemedsam.utils import preprocess_image_and_box, overlay_mask_on_image
-# from waitress import serve
+from waitress import serve
 
 
 app = Flask(__name__)
@@ -145,5 +145,5 @@ def predict():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
-    # serve(app, host='0.0.0.0', port=5000)
+    # app.run(debug=True)
+    serve(app, host='0.0.0.0', port=5000)
