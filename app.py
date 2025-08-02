@@ -144,6 +144,8 @@ def predict():
         print("Prediction failed:", e)
         return jsonify({'error': str(e)}), 500
 
+# using waitress to serve the app
+# This is more production-ready than Flask's built-in server
 if __name__ == '__main__':
     # app.run(debug=True)
     serve(app, host='0.0.0.0', port=5000)
